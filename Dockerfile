@@ -32,8 +32,9 @@ RUN composer install --no-dev --optimize-autoloader
 RUN npm install && npm run build
 
 # Set permissions (if needed)
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
-
+RUN chown -R www-data:www-data /var/www/html \
+    && find /var/www/html -type d -exec chmod 755 {} \; \
+    && find /var/www/html -type f -exec chmod 644 {} \;
 # Enable Apache Rewrite Module
 RUN a2enmod rewrite
 
