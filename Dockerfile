@@ -22,6 +22,10 @@ WORKDIR /var/www/html
 # Copy the application files
 COPY . .
 
+# Copy the custom Apache configuration file
+COPY apache.conf /etc/apache2/sites-available/000-default.conf
+
+
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
@@ -29,12 +33,16 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 RUN composer install --no-dev --optimize-autoloader
 
 # Install npm dependencies and build assets
-RUN npm install && npm run build
+RUN npm install
+RUN npm run build
 
-# Set permissions (if needed)
-RUN chown -R www-data:www-data /var/www/html \
-    && find /var/www/html -type d -exec chmod 755 {} \; \
-    && find /var/www/html -type f -exec chmod 644 {} \;
+RUN mkdir -p /var/www/database
+RUN touch /var/www/database/database.sqlite
+
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
+    && chown -R www-data:www-data /var/www/database \
+    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+
 # Enable Apache Rewrite Module
 RUN a2enmod rewrite
 
@@ -42,4 +50,4 @@ RUN a2enmod rewrite
 EXPOSE 80
 
 # Start the Apache server
-CMD ["apache2-foreground"]
+CMD ["bash", "-c", "php artisan migrate --force && apache2-foreground"]
